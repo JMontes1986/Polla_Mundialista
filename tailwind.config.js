@@ -17,6 +17,16 @@ module.exports = {
         'pulse-gold': 'pulse-gold 2s ease-in-out infinite',
         'slide-in': 'slide-in 0.3s ease-out forwards',
       },
+      keyframes: {
+        'pulse-gold': {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(201, 168, 76, 0)' },
+          '50%': { boxShadow: '0 0 20px 4px rgba(201, 168, 76, 0.3)' },
+        },
+        'slide-in': {
+          from: { opacity: '0', transform: 'translateY(8px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
     },
   },
   plugins: [],
