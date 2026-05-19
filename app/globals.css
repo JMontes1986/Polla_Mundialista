@@ -1,0 +1,124 @@
+/* app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --fifa-blue: #003087;
+  --fifa-gold: #c9a84c;
+  --fifa-dark: #0a0e1a;
+  --fifa-card: #111827;
+  --fifa-border: rgba(201, 168, 76, 0.2);
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-gray-950 text-gray-100 antialiased;
+    background: radial-gradient(ellipse at 20% 20%, #0d1a3a 0%, #0a0e1a 50%, #000 100%);
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Tarjeta principal */
+  .card {
+    @apply bg-gray-900/80 border border-gray-800 rounded-2xl backdrop-blur-sm;
+  }
+
+  /* Botón primario */
+  .btn-primary {
+    @apply bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold px-6 py-3 rounded-xl
+           transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg;
+  }
+
+  /* Botón secundario */
+  .btn-secondary {
+    @apply border border-amber-500/40 hover:border-amber-500 text-amber-400 hover:text-amber-300
+           font-semibold px-6 py-3 rounded-xl transition-all duration-200;
+  }
+
+  /* Badge de fase */
+  .phase-badge {
+    @apply text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wide;
+  }
+
+  /* Tarjeta de partido */
+  .match-card {
+    @apply card p-4 hover:border-amber-500/30 transition-all duration-200 cursor-pointer;
+  }
+
+  /* Score input */
+  .score-input {
+    @apply w-12 h-12 text-center text-xl font-bold bg-gray-800 border border-gray-700
+           rounded-lg text-white focus:border-amber-500 focus:outline-none focus:ring-1
+           focus:ring-amber-500 transition-colors;
+  }
+
+  /* Ranking item */
+  .rank-row {
+    @apply flex items-center gap-4 p-3 rounded-xl hover:bg-gray-800/50 transition-colors;
+  }
+
+  /* Navlink activo */
+  .nav-active {
+    @apply text-amber-400 border-b-2 border-amber-400;
+  }
+
+  /* Status badges */
+  .status-live {
+    @apply bg-red-500/20 text-red-400 border border-red-500/30;
+  }
+  .status-finished {
+    @apply bg-green-500/20 text-green-400 border border-green-500/30;
+  }
+  .status-scheduled {
+    @apply bg-blue-500/20 text-blue-400 border border-blue-500/30;
+  }
+  .status-locked {
+    @apply bg-gray-500/20 text-gray-400 border border-gray-500/30;
+  }
+
+  /* Puntos ganados */
+  .points-exact {
+    @apply text-amber-400 font-bold;
+  }
+  .points-winner {
+    @apply text-green-400 font-semibold;
+  }
+  .points-zero {
+    @apply text-gray-500;
+  }
+}
+
+/* Animaciones */
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0); }
+  50% { box-shadow: 0 0 20px 4px rgba(201, 168, 76, 0.3); }
+}
+
+.live-pulse {
+  animation: pulse-gold 2s ease-in-out infinite;
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in {
+  animation: slide-in 0.3s ease-out forwards;
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #111827; }
+::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #4b5563; }
