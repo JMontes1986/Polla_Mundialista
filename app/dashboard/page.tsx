@@ -31,9 +31,9 @@ async function getDashboardData(userId: string, supabase: ReturnType<typeof crea
   ])
 
   return {
-    profile: profileRes.data,
-    polls: pollsRes.data ?? [],
-    upcomingMatches: upcomingMatchesRes.data ?? [],
+    profile: profileRes.data as any,
+    polls: (pollsRes.data ?? []) as any[],
+    upcomingMatches: (upcomingMatchesRes.data ?? []) as any[],
   }
 }
 
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+    { cookies: { get: (name: string) => cookieStore.get(name)?.value } }
   )
 
   const { data: { user } } = await supabase.auth.getUser()
