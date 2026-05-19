@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+
+[[redirects]]
+  from = "/.netlify/functions/cron-sync-results"
+  to = "/api/cron/sync-results"
+  status = 200

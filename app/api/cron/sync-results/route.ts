@@ -1,7 +1,6 @@
 // app/api/cron/sync-results/route.ts
-// Vercel Cron Job - se ejecuta cada 5 minutos durante el Mundial
-// Configurar en vercel.json:
-// { "crons": [{ "path": "/api/cron/sync-results", "schedule": "*/5 * * * *" }] }
+// Cron endpoint para Netlify (o cron externo), recomendado cada 5 minutos durante el Mundial
+// Puedes invocarlo vía: /.netlify/functions/cron-sync-results (redirigido a este route handler)
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
@@ -18,7 +17,7 @@ function getAdminClient() {
 }
 
 export async function GET(request: Request) {
-  // Verificar secret del cron (Vercel lo envía en Authorization)
+  // Verificar secret del cron (enviar Authorization: Bearer <CRON_SECRET>)
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

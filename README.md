@@ -4,7 +4,7 @@
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green?logo=supabase)
-![Vercel](https://img.shields.io/badge/Vercel-Deploy-black?logo=vercel)
+![Netlify](https://img.shields.io/badge/Netlify-Deploy-00C7B7?logo=netlify)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
 
 ---
@@ -37,10 +37,10 @@
 | Capa | Tecnología |
 |------|-----------|
 | Frontend | Next.js 14, React, TypeScript, TailwindCSS |
-| Backend | Route Handlers, Server Actions, Vercel Cron Jobs |
+| Backend | Route Handlers, Server Actions, Netlify Scheduled Functions / external cron |
 | Base de datos | Supabase (PostgreSQL + Auth + RLS + Realtime) |
 | APIs | football-data.org (principal), TheSportsDB (fallback) |
-| Deploy | Vercel |
+| Deploy | Netlify |
 
 ---
 
@@ -79,7 +79,7 @@ polla-mundialista/
 ├── supabase/
 │   └── schema.sql                  # SQL completo
 ├── next.config.ts
-├── vercel.json
+├── netlify.toml
 ├── tailwind.config.ts
 └── .env.local
 ```
@@ -145,7 +145,7 @@ npm run dev
 
 ---
 
-## 🚢 Despliegue en Vercel
+## 🚢 Despliegue en Netlify
 
 ### Paso 1: Subir a GitHub
 
@@ -158,16 +158,17 @@ git remote add origin https://github.com/TU_USUARIO/polla-mundialista-2026.git
 git push -u origin main
 ```
 
-### Paso 2: Conectar con Vercel
+### Paso 2: Conectar con Netlify
 
-1. Ve a [vercel.com/new](https://vercel.com/new)
+1. Ve a [app.netlify.com/start](https://app.netlify.com/start)
 2. Selecciona tu repositorio
-3. Framework: **Next.js** (detección automática)
-4. Agrega las variables de entorno del paso 2
+3. Build command: **npm run build**
+4. Publish directory: **.next** (con Next.js Runtime de Netlify)
+5. Agrega las variables de entorno del paso 2
 
-### Paso 3: Configurar variables en Vercel
+### Paso 3: Configurar variables en Netlify
 
-En Vercel → Project → Settings → Environment Variables:
+En Netlify → Site configuration → Environment variables:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL        → tu valor
@@ -178,17 +179,21 @@ THESPORTSDB_API_KEY             → 3
 CRON_SECRET                     → tu valor generado
 ```
 
-### Paso 4: Verificar el Cron Job
+### Paso 4: Configurar el Cron en Netlify
 
-El `vercel.json` ya configura el cron para ejecutarse cada 5 minutos:
+`netlify.toml` configura el endpoint como función para Netlify y define headers de seguridad.
 
-```json
-{
-  "crons": [{ "path": "/api/cron/sync-results", "schedule": "*/5 * * * *" }]
-}
+Para ejecutar cada 5 minutos, configura un Scheduled Function o un job externo (por ejemplo GitHub Actions o UptimeRobot) que haga `GET` a:
+
+```
+/.netlify/functions/cron-sync-results
 ```
 
-Ve a Vercel → Project → Cron Jobs para verificar que esté activo.
+Envíando el header:
+
+```
+Authorization: Bearer $CRON_SECRET
+```
 
 ### Paso 5: Hacer admin al primer usuario
 
