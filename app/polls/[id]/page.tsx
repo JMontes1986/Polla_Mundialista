@@ -3,6 +3,19 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/supabase/types'
 
+type Poll = Pick<Database['public']['Tables']['polls']['Row'], 'id' | 'name' | 'description'>
+type Prediction = Pick<
+  Database['public']['Tables']['predictions']['Row'],
+  'match_id' | 'home_score_pred' | 'away_score_pred'
+>
+type Match = Pick<
+  Database['public']['Tables']['matches']['Row'],
+  'id' | 'phase' | 'match_date' | 'status' | 'lock_time'
+> & {
+  home_team: { short_name: string; flag_url: string | null } | null
+  away_team: { short_name: string; flag_url: string | null } | null
+}
+
 export default async function PollDetailPage({ params }: { params: { id: string } }) {
   const cookieStore = cookies()
   const supabase = createServerClient<Database>(
@@ -22,10 +35,12 @@ export default async function PollDetailPage({ params }: { params: { id: string 
     supabase.from('predictions').select('match_id,home_score_pred,away_score_pred').eq('poll_id', pollId).eq('user_id', user.id),
   ])
 
-  const poll = pollRes.data
+  const poll = pollRes.data as Poll | null
   if (!poll) redirect('/dashboard')
 
-  const predMap = new Map((predictionsRes.data ?? []).map((p: any) => [p.match_id, p]))
+  const predictions = (predictionsRes.data ?? []) as Prediction[]
+  const matches = (matchesRes.data ?? []) as Match[]
+  const predMap = new Map(predictions.map((p) => [p.match_id, p]))
 
   async function savePrediction(formData: FormData) {
     'use server'
@@ -45,13 +60,15 @@ export default async function PollDetailPage({ params }: { params: { id: string 
 
     if (Number.isNaN(matchId) || Number.isNaN(home) || Number.isNaN(away)) return
 
-    await supabase.from('predictions').upsert({
-      poll_id: pollId,
-      match_id: matchId,
-      user_id: user.id,
-      home_score_pred: home,
-      away_score_pred: away,
-    })
+    await supabase.from('predictions').upsert([
+      {
+        poll_id: pollId,
+        match_id: matchId,
+        user_id: user.id,
+        home_score_pred: home,
+        away_score_pred: away,
+      },
+    ] as any)
 
     redirect(`/polls/${pollId}`)
   }
@@ -62,8 +79,8 @@ export default async function PollDetailPage({ params }: { params: { id: string 
       <p className="text-gray-400 mt-1 mb-6">{poll.description ?? 'Registra tus pronósticos para todos los partidos del mundial.'}</p>
 
       <div className="space-y-3">
-        {(matchesRes.data ?? []).map((m: any) => {
-          const locked = m.lock_time && new Date() >= new Date(m.lock_time)
+        {matches.map((m) => {
+          const locked = Boolean(m.lock_time && new Date() >= new Date(m.lock_time))
           const pred = predMap.get(m.id)
           return (
             <form key={m.id} action={savePrediction} className="card p-4">

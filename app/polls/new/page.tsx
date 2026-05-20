@@ -3,6 +3,8 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/supabase/types'
 
+type CreatedPoll = Pick<Database['public']['Tables']['polls']['Row'], 'id'>
+
 export default async function NewPollPage() {
   const cookieStore = cookies()
   const supabase = createServerClient<Database>(
@@ -34,14 +36,15 @@ export default async function NewPollPage() {
 
     const { data: poll, error } = await supabase
       .from('polls')
-      .insert({ name, description: description || null, is_public: isPublic, owner_id: user.id })
+      .insert([{ name, description: description || null, is_public: isPublic, owner_id: user.id }] as any)
       .select('id')
       .single()
 
-    if (error || !poll) return
+    const createdPoll = poll as CreatedPoll | null
+    if (error || !createdPoll) return
 
-    await supabase.from('poll_members').insert({ poll_id: poll.id, user_id: user.id })
-    redirect(`/polls/${poll.id}`)
+    await supabase.from('poll_members').insert([{ poll_id: createdPoll.id, user_id: user.id }] as any)
+    redirect(`/polls/${createdPoll.id}`)
   }
 
   return (

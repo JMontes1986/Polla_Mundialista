@@ -29,6 +29,7 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['profiles']['Row'], 'created_at' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['profiles']['Insert']>
+        Relationships: []
       }
       teams: {
         Row: {
@@ -42,6 +43,7 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['teams']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['teams']['Insert']>
+        Relationships: []
       }
       matches: {
         Row: {
@@ -65,6 +67,7 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['matches']['Row'], 'id' | 'created_at' | 'updated_at' | 'lock_time'>
         Update: Partial<Database['public']['Tables']['matches']['Insert']>
+        Relationships: []
       }
       polls: {
         Row: {
@@ -81,6 +84,7 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['polls']['Row'], 'created_at' | 'updated_at' | 'invite_code'>
         Update: Partial<Database['public']['Tables']['polls']['Insert']>
+        Relationships: []
       }
       poll_members: {
         Row: {
@@ -93,6 +97,7 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['poll_members']['Row'], 'id' | 'joined_at' | 'points' | 'rank'>
         Update: Partial<Database['public']['Tables']['poll_members']['Insert']>
+        Relationships: []
       }
       predictions: {
         Row: {
@@ -112,6 +117,7 @@ export interface Database {
           'id' | 'submitted_at' | 'updated_at' | 'points_earned' | 'is_calculated'
         >
         Update: Partial<Database['public']['Tables']['predictions']['Insert']>
+        Relationships: []
       }
       standings: {
         Row: {
@@ -128,6 +134,7 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['standings']['Row'], 'id' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['standings']['Insert']>
+        Relationships: []
       }
       sync_logs: {
         Row: {
@@ -141,6 +148,7 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['sync_logs']['Row'], 'id' | 'synced_at'>
         Update: Partial<Database['public']['Tables']['sync_logs']['Insert']>
+        Relationships: []
       }
       admin_logs: {
         Row: {
@@ -155,8 +163,10 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['admin_logs']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['admin_logs']['Insert']>
+        Relationships: []
       }
     }
+    Views: Record<string, never>
     Functions: {
       calculate_prediction_points: {
         Args: { pred_home: number; pred_away: number; real_home: number; real_away: number }
@@ -171,6 +181,13 @@ export interface Database {
         Returns: number
       }
     }
+    Enums: {
+      match_status: MatchStatus
+      match_phase: MatchPhase
+      user_role: UserRole
+      sync_source: SyncSource
+    }
+    CompositeTypes: Record<string, never>
   }
 }
 
