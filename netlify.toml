@@ -1,16 +1,42 @@
-[build]
-  command = "npm run build"
-  publish = ".next"
+# netlify.toml
+# Configuración oficial para Next.js 14 en Netlify
 
+[build]
+  command   = "npm run build"
+  publish   = ".next"
+
+[build.environment]
+  NODE_VERSION      = "20"
+  NPM_VERSION       = "10"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Plugin OBLIGATORIO para Next.js App Router en Netlify
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Headers de seguridad (refuerzan los de next.config.ts)
 [[headers]]
-  for = "/api/*"
+  for = "/*"
   [headers.values]
+    X-Frame-Options        = "DENY"
     X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
 
-[[redirects]]
-  from = "/.netlify/functions/cron-sync-results"
-  to = "/api/cron/sync-results"
-  status = 200
+# Cache agresivo para assets estáticos de Next.js
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+# Variables de entorno que Netlify necesita en build-time
+# (las sensibles se agregan en el dashboard de Netlify, NO aquí)
+[context.production.environment]
+  NODE_ENV = "production"
+
+[context.deploy-preview.environment]
+  NODE_ENV = "development"
