@@ -6,6 +6,24 @@ module.exports = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './lib/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+
+  safelist: [
+    'status-live',
+    'status-finished',
+    'status-scheduled',
+    'status-locked',
+    'points-exact',
+    'points-winner',
+    'points-zero',
+    'phase-badge',
+    'match-card',
+    'rank-row',
+    'nav-active',
+    'btn-primary',
+    'btn-secondary',
+    'score-input',
+    'card',
+  ],
   theme: {
     extend: {
       colors: {
