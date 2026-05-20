@@ -4,8 +4,8 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { syncResults } from '@/lib/football-data'
-import { fallbackSync } from '@/lib/thesportsdb'
+import { syncResults } from '../../../../lib/football-data'
+import { fallbackSync } from '../../../../lib/thesportsdb'
 
 // Cliente admin con service role (solo en server)
 function getAdminClient() {
