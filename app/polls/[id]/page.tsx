@@ -11,6 +11,7 @@ type PollDetailPageProps = {
     imported?: string
     updated?: string
     total?: string
+    reason?: string
   }
 }
 type Poll = Pick<
@@ -75,6 +76,7 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
   const importSummary = searchParams?.total
     ? ` Nuevos: ${searchParams.imported ?? 0} - actualizados: ${searchParams.updated ?? 0} - recibidos: ${searchParams.total}.`
     : ''
+  const importReason = searchParams?.reason ? ` Detalle: ${searchParams.reason}` : ''
 
   async function savePrediction(formData: FormData) {
     'use server'
@@ -149,7 +151,7 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
             ? 'bg-green-500/10 border-green-500/30 text-green-400'
             : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
         }`}>
-          {importMessage}{importSummary}
+          {importMessage}{importSummary}{importReason}
         </div>
       )}
 

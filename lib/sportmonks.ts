@@ -85,13 +85,21 @@ function normalizeFixture(f: SportmonksFixture): SportmonksNormalizedMatch | nul
 export async function getInplayMatches(): Promise<SportmonksNormalizedMatch[]> {
   const token = process.env.SPORTMONKS_API_TOKEN
   if (!token) {
-    console.warn('[sportmonks] SPORTMONKS_API_TOKEN no configurado')
-    return []
+    throw new Error('SPORTMONKS_API_TOKEN no esta configurado')
   }
 
   const url = `${SPORTMONKS_BASE}/livescores/inplay?api_token=${token}&include=participants;scores;periods;events;league.country;round`
   const res = await fetch(url, { next: { revalidate: 0 } })
-  if (!res.ok) throw new Error(`[sportmonks] HTTP ${res.status}`)
+  if (!res.ok) {
+    let detail = ''
+    try {
+      const errorBody = await res.json()
+      detail = typeof errorBody?.message === 'string' ? `: ${errorBody.message}` : ''
+    } catch {
+      detail = ''
+    }
+    throw new Error(`Sportmonks respondio HTTP ${res.status}${detail}`)
+  }
   const json = await res.json()
   const fixtures: SportmonksFixture[] = json.data ?? []
   return fixtures.map(normalizeFixture).filter(Boolean) as SportmonksNormalizedMatch[]

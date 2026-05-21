@@ -12,6 +12,20 @@ type CookieToSet = {
   options: CookieOptions
 }
 
+function errorMessage(error: unknown) {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'string') return error
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message?: unknown }).message)
+  }
+  return 'Error desconocido'
+}
+
+function errorRedirectPath(pollId: string, error: unknown) {
+  const message = encodeURIComponent(errorMessage(error).slice(0, 180))
+  return `/polls/${pollId}?import=error&reason=${message}`
+}
+
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const redirectWithCookies = (path: string, cookiesToSet: CookieToSet[] = []) => {
     const response = NextResponse.redirect(new URL(path, request.url), { status: 303 })
@@ -61,13 +75,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const result = await importInplayMatches(supabaseAdmin)
     const imported = result.imported + result.updated
 
-    await supabaseAdmin.from('sync_logs').insert({
+    const { error: logError } = await supabaseAdmin.from('sync_logs').insert({
       source: 'sportmonks',
       matches_updated: imported,
       success: result.errors.length === 0,
       error_message: result.errors.length > 0 ? result.errors.join('; ') : null,
       duration_ms: null,
     })
+    if (logError) throw logError
 
     const status = result.errors.length > 0 ? 'partial' : 'ok'
     return redirectWithCookies(
@@ -76,6 +91,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
     )
   } catch (err) {
     console.error('Sportmonks import failed', err)
-    return redirectWithCookies(`/polls/${params.id}?import=error`, cookiesToSet)
+    return redirectWithCookies(errorRedirectPath(params.id, err), cookiesToSet)
   }
 }
