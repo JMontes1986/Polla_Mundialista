@@ -145,6 +145,34 @@ npm run dev
 
 ---
 
+
+## ✅ ¿Cómo subir partidos para empezar apuestas?
+
+Si ya creaste una polla, los partidos se cargan en la tabla `matches` y luego aparecen automáticamente en `/polls/[id]` para que cada usuario haga su pronóstico.
+
+1. **Carga inicial del calendario (una sola vez)**
+   - Opción A (recomendada): desde `/admin` usando el botón de importación/actualización.
+   - Opción B: ejecuta el seed local:
+   ```bash
+   npx tsx scripts/seed-calendar.ts
+   ```
+
+2. **Verifica que existan partidos**
+   - En `/admin` → pestaña **⚽ Partidos** debe verse el listado.
+   - En la vista de la polla (`/polls/<id>`) se listan esos partidos con campos para marcar resultado previsto.
+
+3. **Habilita que los usuarios apuesten**
+   - Cada usuario debe estar dentro de la polla (`poll_members`).
+   - Las apuestas se guardan desde la pantalla de la polla mientras el partido no esté bloqueado (`lock_time`).
+
+4. **Resultados reales (cuando inicie el torneo)**
+   - Usa **🔄 Sincronizar ahora** en `/admin` o el cron `/api/cron/sync-results`.
+   - Si hace falta, corrige manualmente un marcador en `/admin`.
+
+> Si en tu polla no aparece ningún partido, casi siempre falta ejecutar el seed/importación inicial de `matches`.
+
+---
+
 ## 🚢 Despliegue en Netlify
 
 ### Paso 1: Subir a GitHub
