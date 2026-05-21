@@ -14,7 +14,7 @@ create extension if not exists "pg_cron";
 create type match_status as enum ('scheduled','live','finished','postponed','cancelled');
 create type match_phase as enum ('groups','round_of_32','round_of_16','quarterfinals','semifinals','third_place','final');
 create type user_role as enum ('admin','participant');
-create type sync_source as enum ('football_data','thesportsdb','openfootball','manual','cache');
+create type sync_source as enum ('sportmonks','football_data','thesportsdb','openfootball','manual','cache');
 
 -- ─────────────────────────────────────────────
 -- TABLA: profiles

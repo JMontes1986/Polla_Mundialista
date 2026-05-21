@@ -4,6 +4,15 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/supabase/types'
 
+type PollDetailPageProps = {
+  params: { id: string }
+  searchParams?: {
+    import?: string
+    imported?: string
+    updated?: string
+    total?: string
+  }
+}
 type Poll = Pick<
   Database['public']['Tables']['polls']['Row'],
   'id' | 'name' | 'description' | 'owner_id' | 'is_public'
@@ -20,7 +29,14 @@ type Match = Pick<
   away_team: { short_name: string; flag_url: string | null } | null
 }
 
-export default async function PollDetailPage({ params }: { params: { id: string } }) {
+const importMessages: Record<string, string> = {
+  ok: 'Partidos importados desde Sportmonks.',
+  partial: 'Importacion parcial desde Sportmonks. Algunos partidos no se pudieron guardar.',
+  error: 'No se pudieron importar los partidos desde Sportmonks.',
+  config: 'Faltan SPORTMONKS_API_TOKEN o las variables de servidor de Supabase.',
+}
+
+export default async function PollDetailPage({ params, searchParams }: PollDetailPageProps) {
   const cookieStore = cookies()
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,6 +70,11 @@ export default async function PollDetailPage({ params }: { params: { id: string 
   const predictions = (predictionsRes.data ?? []) as Prediction[]
   const matches = (matchesRes.data ?? []) as Match[]
   const predMap = new Map(predictions.map((p) => [p.match_id, p]))
+  const isOwner = poll.owner_id === user.id
+  const importMessage = searchParams?.import ? importMessages[searchParams.import] : null
+  const importSummary = searchParams?.total
+    ? ` Nuevos: ${searchParams.imported ?? 0} - actualizados: ${searchParams.updated ?? 0} - recibidos: ${searchParams.total}.`
+    : ''
 
   async function savePrediction(formData: FormData) {
     'use server'
@@ -110,10 +131,39 @@ export default async function PollDetailPage({ params }: { params: { id: string 
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-black text-white">{poll.name}</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <h1 className="text-3xl font-black text-white">{poll.name}</h1>
+        {isOwner && (
+          <form action={`/api/polls/${pollId}/import-sportmonks`} method="post">
+            <button type="submit" className="btn-primary whitespace-nowrap">
+              Importar partidos
+            </button>
+          </form>
+        )}
+      </div>
       <p className="text-gray-400 mt-1 mb-6">{poll.description ?? 'Registra tus pronósticos para todos los partidos del mundial.'}</p>
 
+      {importMessage && (
+        <div className={`mb-5 rounded-xl border p-3 text-sm ${
+          searchParams?.import === 'ok'
+            ? 'bg-green-500/10 border-green-500/30 text-green-400'
+            : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+        }`}>
+          {importMessage}{importSummary}
+        </div>
+      )}
+
       <div className="space-y-3">
+        {matches.length === 0 && (
+          <div className="card p-8 text-center">
+            <h2 className="text-xl font-bold text-white mb-2">No hay partidos cargados</h2>
+            <p className="text-gray-400 text-sm max-w-xl mx-auto">
+              {isOwner
+                ? 'Usa Importar partidos para traerlos desde Sportmonks y dejarlos disponibles para los pronosticos.'
+                : 'El administrador de esta polla todavia no ha cargado partidos.'}
+            </p>
+          </div>
+        )}
         {matches.map((m) => {
           const locked = Boolean(m.lock_time && new Date() >= new Date(m.lock_time))
           const pred = predMap.get(m.id)
