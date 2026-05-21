@@ -18,7 +18,13 @@ export async function POST(request: Request) {
   const supabase = createServerClient<Database>(
     supabaseUrl,
     supabaseAnonKey,
-    { cookies: { get: (name: string) => cookieStore.get(name)?.value } }
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: () => {},
+        remove: () => {},
+      },
+    }
   )
 
   const { data: { user } } = await supabase.auth.getUser()
