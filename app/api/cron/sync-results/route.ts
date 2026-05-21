@@ -4,7 +4,7 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { syncResults } from '../../../../lib/football-data'
+import { syncInplayMatches } from '../../../../lib/sportmonks'
 import { fallbackSync } from '../../../../lib/thesportsdb'
 
 // Cliente admin con service role (solo en server)
@@ -28,16 +28,16 @@ export async function GET(request: Request) {
 
   let result = { updated: 0, errors: [] as string[], source: '' }
 
-  // 1. Intentar con football-data.org
+  // 1. Intentar con Sportmonks (inplay)
   try {
-    const fdResult = await syncResults(supabase)
-    if (fdResult.updated > 0 || fdResult.errors.length === 0) {
-      result = { ...fdResult, source: 'football_data' }
+    const smResult = await syncInplayMatches(supabase)
+    if (smResult.updated > 0 || smResult.errors.length === 0) {
+      result = { ...smResult, source: 'sportmonks' }
     } else {
-      throw new Error('football-data returned 0 updates, trying fallback')
+      throw new Error('sportmonks returned 0 updates, trying fallback')
     }
   } catch (primaryErr) {
-    console.warn('[cron] football-data failed, using TheSportsDB fallback:', primaryErr)
+    console.warn('[cron] sportmonks failed, using TheSportsDB fallback:', primaryErr)
 
     // 2. Fallback: TheSportsDB
     try {
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
 
   // Guardar log de sincronización
   await supabase.from('sync_logs').insert({
-    source: result.source as 'football_data' | 'thesportsdb' | 'manual',
+    source: result.source as 'sportmonks' | 'thesportsdb' | 'manual',
     matches_updated: result.updated,
     success: result.errors.length === 0,
     error_message: result.errors.length > 0 ? result.errors.join('; ') : null,

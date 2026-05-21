@@ -15,8 +15,8 @@
 - **Predicciones bloqueadas** 30 minutos antes de cada partido
 - **Puntuación automática** via triggers PostgreSQL
 - **Ranking en tiempo real** con Supabase Realtime
-- **Sincronización automática** con football-data.org cada 5 minutos
-- **Fallback inteligente**: football-data → TheSportsDB → Supabase local
+- **Sincronización automática** con Sportmonks (inplay) cada 5 minutos
+- **Fallback inteligente**: Sportmonks → TheSportsDB → Supabase local
 - **Panel administrador** para corrección manual de resultados
 - **Pollas privadas** con código de invitación
 - **Exportación CSV** del ranking
@@ -39,7 +39,7 @@
 | Frontend | Next.js 14, React, TypeScript, TailwindCSS |
 | Backend | Route Handlers, Server Actions, Netlify Scheduled Functions / external cron |
 | Base de datos | Supabase (PostgreSQL + Auth + RLS + Realtime) |
-| APIs | football-data.org (principal), TheSportsDB (fallback) |
+| APIs | Sportmonks (principal), TheSportsDB (fallback) |
 | Deploy | Netlify |
 
 ---
@@ -68,7 +68,7 @@ polla-mundialista/
 │       ├── cron/sync-results/route.ts
 │       └── admin/manual-result/route.ts
 ├── lib/
-│   ├── football-data.ts            # API principal
+│   ├── sportmonks.ts               # API principal (inplay)
 │   ├── thesportsdb.ts              # Fallback
 │   ├── openfootball.ts             # Carga inicial
 │   ├── scoring.ts                  # Motor de puntos
@@ -104,14 +104,14 @@ Crea el archivo `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
-FOOTBALL_DATA_API_KEY=tu_key_de_football_data
+SPORTMONKS_API_TOKEN=tu_token_de_sportmonks
 THESPORTSDB_API_KEY=3
 CRON_SECRET=genera_un_string_aleatorio_seguro
 ```
 
 **Cómo obtener las keys:**
 - **Supabase**: Dashboard → Settings → API
-- **football-data.org**: Regístrate en https://www.football-data.org/client/register (gratuito)
+- **Sportmonks**: crea tu token en https://my.sportmonks.com/
 - **TheSportsDB**: La key `3` es pública y gratuita
 - **CRON_SECRET**: `openssl rand -base64 32`
 
@@ -202,7 +202,7 @@ En Netlify → Site configuration → Environment variables:
 NEXT_PUBLIC_SUPABASE_URL        → tu valor
 NEXT_PUBLIC_SUPABASE_ANON_KEY   → tu valor
 SUPABASE_SERVICE_ROLE_KEY       → tu valor (solo servidor)
-FOOTBALL_DATA_API_KEY           → tu valor
+SPORTMONKS_API_TOKEN            → tu valor
 THESPORTSDB_API_KEY             → 3
 CRON_SECRET                     → tu valor generado
 ```
