@@ -12,6 +12,8 @@ type NewPollPageProps = {
 const pollErrorMessages: Record<string, string> = {
   config: 'Faltan variables de Supabase en el despliegue.',
   name: 'Escribe un nombre para crear la polla.',
+  profile: 'No se pudo preparar tu perfil para crear la polla. Revisa los logs de Netlify.',
+  'profile-config': 'Falta SUPABASE_SERVICE_ROLE_KEY en Netlify para reparar perfiles de usuario.',
   create: 'No se pudo crear la polla. Revisa los logs de Netlify para ver el detalle de Supabase.',
 }
 

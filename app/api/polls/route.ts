@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { CookieOptions } from '@supabase/ssr'
@@ -58,6 +59,55 @@ export async function POST(request: Request) {
 
   if (!name) {
     return redirectWithCookies('/polls/new?error=name', cookiesToSet)
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!profile) {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!serviceRoleKey) {
+      console.error('Poll creation failed: user profile is missing and service role key is not configured', {
+        userId: user.id,
+      })
+      return redirectWithCookies('/polls/new?error=profile-config', cookiesToSet)
+    }
+
+    const supabaseAdmin = createAdminClient<Database>(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false },
+    })
+
+    const fallbackUsername = user.email?.split('@')[0] || 'Jugador'
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        username:
+          typeof user.user_metadata?.username === 'string'
+            ? user.user_metadata.username
+            : fallbackUsername,
+        full_name:
+          typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : '',
+        avatar_url:
+          typeof user.user_metadata?.avatar_url === 'string' ? user.user_metadata.avatar_url : '',
+        role: 'participant',
+        total_points: 0,
+      })
+
+    if (profileError) {
+      console.error('Poll creation failed: profile repair failed', {
+        userId: user.id,
+        message: profileError.message,
+        details: profileError.details,
+        hint: profileError.hint,
+        code: profileError.code,
+      })
+      return redirectWithCookies('/polls/new?error=profile', cookiesToSet)
+    }
   }
 
   const { data: poll, error } = await supabase

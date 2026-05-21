@@ -14,6 +14,7 @@ type HomePageProps = {
 
 const authErrorMessages: Record<string, string> = {
   session: 'Tu sesion no llego al servidor. Inicia sesion de nuevo e intenta crear la polla otra vez.',
+  create: 'No se pudo crear la polla. Inicia sesion de nuevo y revisa que el despliegue tenga la ultima version.',
 }
 
 export default function HomePage({ searchParams }: HomePageProps) {
