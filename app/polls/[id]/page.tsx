@@ -16,14 +16,17 @@ type PollDetailPageProps = {
     delete?: string
   }
 }
+
 type Poll = Pick<
   Database['public']['Tables']['polls']['Row'],
   'id' | 'name' | 'description' | 'owner_id' | 'is_public' | 'invite_code'
 >
+
 type Prediction = Pick<
   Database['public']['Tables']['predictions']['Row'],
   'match_id' | 'home_score_pred' | 'away_score_pred'
 >
+
 type Match = Pick<
   Database['public']['Tables']['matches']['Row'],
   'id' | 'phase' | 'match_date' | 'status' | 'lock_time'
@@ -60,10 +63,26 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
     : supabase
 
   const [pollRes, memberRes, matchesRes, predictionsRes] = await Promise.all([
-    dataClient.from('polls').select('id,name,description,owner_id,is_public,invite_code').eq('id', pollId).single(),
-    dataClient.from('poll_members').select('id').eq('poll_id', pollId).eq('user_id', user.id).maybeSingle(),
-    dataClient.from('matches').select('id,phase,match_date,status,lock_time,home_team:teams!matches_home_team_id_fkey(short_name,flag_url),away_team:teams!matches_away_team_id_fkey(short_name,flag_url)').order('match_date'),
-    dataClient.from('predictions').select('match_id,home_score_pred,away_score_pred').eq('poll_id', pollId).eq('user_id', user.id),
+    dataClient
+      .from('polls')
+      .select('id,name,description,owner_id,is_public,invite_code')
+      .eq('id', pollId)
+      .single(),
+    dataClient
+      .from('poll_members')
+      .select('id')
+      .eq('poll_id', pollId)
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    dataClient
+      .from('matches')
+      .select('id,phase,match_date,status,lock_time,home_team:teams!matches_home_team_id_fkey(short_name,flag_url),away_team:teams!matches_away_team_id_fkey(short_name,flag_url)')
+      .order('match_date'),
+    dataClient
+      .from('predictions')
+      .select('match_id,home_score_pred,away_score_pred')
+      .eq('poll_id', pollId)
+      .eq('user_id', user.id),
   ])
 
   const poll = pollRes.data as Poll | null
@@ -182,8 +201,8 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="mb-5 flex flex-wrap gap-3">
+    <div className="mx-auto max-w-4xl px-4 py-6">
+      <div className="mb-4 flex flex-wrap gap-2">
         <Link href="/dashboard" className="btn-secondary text-sm">
           Volver al inicio
         </Link>
@@ -191,10 +210,13 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
           Mis pollas
         </Link>
       </div>
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-black text-white">{poll.name}</h1>
-          <p className="text-gray-400 mt-1">{poll.description ?? 'Registra tus pronosticos para todos los partidos del mundial.'}</p>
+          <p className="mt-1 text-sm text-gray-400">
+            {poll.description ?? 'Registra tus pronosticos para todos los partidos del mundial.'}
+          </p>
         </div>
         {isOwner && (
           <form action={`/api/polls/${pollId}/import-local-calendar`} method="post">
@@ -204,23 +226,25 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
           </form>
         )}
       </div>
+
       {isOwner && (
-        <div className="card p-4 mt-5 mb-6 space-y-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="card mb-5 mt-5 space-y-4 p-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase">Invitacion</p>
-              <p className="text-white font-bold mt-1">
+              <p className="text-xs font-semibold uppercase text-gray-500">Invitacion</p>
+              <p className="mt-1 font-bold text-white">
                 Codigo: <span className="text-amber-400">{poll.invite_code}</span>
               </p>
-              <p className="text-gray-400 text-sm mt-1 break-all">{inviteUrl}</p>
+              <p className="mt-1 break-all text-sm text-gray-400">{inviteUrl}</p>
             </div>
-            <a href={invitePath} className="btn-secondary text-sm text-center whitespace-nowrap">
+            <a href={invitePath} className="btn-secondary whitespace-nowrap text-center text-sm">
               Abrir enlace
             </a>
           </div>
+
           <form action={deletePoll} className="border-t border-gray-800 pt-4">
             <input type="hidden" name="pollId" value={pollId} />
-            <p className="text-xs font-semibold text-red-400 uppercase">Eliminar polla</p>
+            <p className="text-xs font-semibold uppercase text-red-400">Eliminar polla</p>
             <p className="mt-1 text-sm text-gray-400">
               Esto elimina la polla, sus miembros, rankings y pronosticos asociados.
             </p>
@@ -254,35 +278,71 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {matches.length === 0 && (
           <div className="card p-8 text-center">
-            <h2 className="text-xl font-bold text-white mb-2">No hay partidos cargados</h2>
-            <p className="text-gray-400 text-sm max-w-xl mx-auto">
+            <h2 className="mb-2 text-xl font-bold text-white">No hay partidos cargados</h2>
+            <p className="mx-auto max-w-xl text-sm text-gray-400">
               {isOwner
                 ? 'Usa Montar Mundial para cargar gratis los 104 partidos del calendario local.'
                 : 'El administrador de esta polla todavia no ha cargado partidos.'}
             </p>
           </div>
         )}
-        {matches.map((m) => {
-          const locked = Boolean(m.lock_time && new Date() >= new Date(m.lock_time))
-          const pred = predMap.get(m.id)
+
+        {matches.map((match) => {
+          const locked = Boolean(match.lock_time && new Date() >= new Date(match.lock_time))
+          const pred = predMap.get(match.id)
+
           return (
-            <form key={m.id} action={savePrediction} className="card p-4">
+            <form key={match.id} action={savePrediction} className="card px-4 py-3">
               <input type="hidden" name="pollId" value={pollId} />
-              <input type="hidden" name="matchId" value={m.id} />
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs text-gray-400">{new Date(m.match_date).toLocaleString('es-CO')} · {m.phase}</span>
+              <input type="hidden" name="matchId" value={match.id} />
+
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[11px] uppercase tracking-wide text-gray-500">
+                  {new Date(match.match_date).toLocaleString('es-CO')} - {match.phase}
+                </span>
                 {locked && <span className="text-xs text-red-400">Cerrado</span>}
               </div>
-              <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-3 items-center">
-                <div className="font-bold text-white flex items-center gap-2"><span>{m.home_team?.flag_url ?? '🏳️'}</span>{m.home_team?.short_name}</div>
-                <input name="homeScore" type="number" min={0} defaultValue={pred?.home_score_pred ?? ''} disabled={locked} className="w-16 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-white text-center" />
-                <div className="font-bold text-white flex items-center gap-2 justify-end">{m.away_team?.short_name}<span>{m.away_team?.flag_url ?? '🏳️'}</span></div>
-                <input name="awayScore" type="number" min={0} defaultValue={pred?.away_score_pred ?? ''} disabled={locked} className="w-16 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-white text-center" />
+
+              <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_1fr_auto]">
+                <div className="min-w-0 truncate text-sm font-bold text-white">
+                  {match.home_team?.short_name}
+                </div>
+
+                <div className="flex items-center justify-center gap-2">
+                  <input
+                    name="homeScore"
+                    type="number"
+                    min={0}
+                    defaultValue={pred?.home_score_pred ?? ''}
+                    disabled={locked}
+                    aria-label={`Resultado de ${match.home_team?.short_name ?? 'local'}`}
+                    className="h-9 w-12 rounded-md border border-gray-700 bg-gray-800 px-2 text-center text-sm font-bold text-white"
+                  />
+                  <span className="text-xs font-bold text-gray-500">VS</span>
+                  <input
+                    name="awayScore"
+                    type="number"
+                    min={0}
+                    defaultValue={pred?.away_score_pred ?? ''}
+                    disabled={locked}
+                    aria-label={`Resultado de ${match.away_team?.short_name ?? 'visitante'}`}
+                    className="h-9 w-12 rounded-md border border-gray-700 bg-gray-800 px-2 text-center text-sm font-bold text-white"
+                  />
+                </div>
+
+                <div className="min-w-0 truncate text-right text-sm font-bold text-white">
+                  {match.away_team?.short_name}
+                </div>
+
+                {!locked && (
+                  <button className="btn-secondary text-xs sm:col-start-4 sm:row-start-1">
+                    Guardar
+                  </button>
+                )}
               </div>
-              {!locked && <button className="mt-3 btn-secondary text-sm">Guardar</button>}
             </form>
           )
         })}

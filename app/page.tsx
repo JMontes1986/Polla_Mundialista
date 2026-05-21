@@ -108,7 +108,7 @@ export default function HomePage({ searchParams }: HomePageProps) {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-300">Ganador + dif. goles</span>
-                <span className="text-green-400 font-bold">5 pts</span>
+                <span className="text-green-400 font-bold">4 pts</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-300">Solo ganador/empate</span>

@@ -11,6 +11,13 @@ Aplicacion web para crear pollas del Mundial 2026, invitar participantes y guard
 - Resultados manuales desde el panel administrador.
 - Ranking y puntos calculados en Supabase.
 
+## Sistema de Puntos
+
+- Marcador exacto: 5 puntos.
+- Ganador o empate correcto con diferencia de goles correcta: 4 puntos.
+- Solo ganador o empate correcto: 3 puntos.
+- Sin acierto: 0 puntos.
+
 ## Flujo Principal
 
 1. Crear una polla desde `/polls/new`.

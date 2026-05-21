@@ -20,7 +20,7 @@ export interface PointsBreakdown {
  * Calcula puntos para una predicción individual
  * Reglas:
  * - Marcador exacto:           5 puntos
- * - Ganador + dif. correcta:   3 + 2 = 5 puntos (sin exacto)
+ * - Ganador + dif. correcta:   4 puntos (sin exacto)
  * - Solo ganador/empate:        3 puntos
  * - Nada:                       0 puntos
  */
@@ -50,7 +50,7 @@ export function calculatePredictionPoints(result: PredictionResult): PointsBreak
 
   if (correctWinner && correctDiff) {
     return {
-      total: 5,
+      total: 4,
       reason: 'correct_winner_diff',
       exactScore: false,
       correctWinner: true,

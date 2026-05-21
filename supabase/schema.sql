@@ -223,18 +223,18 @@ begin
     else 'draw'
   end;
 
-  -- Ganador/empate correcto: 3 puntos
-  if pred_winner = real_winner then
-    pts := 3;
-  end if;
-
-  -- Diferencia de goles correcta: 2 puntos extra
+  -- Ganador + diferencia correcta: 4 puntos
   if pred_winner = real_winner
     and (pred_home - pred_away) = (real_home - real_away) then
-    pts := pts + 2;
+    return 4;
   end if;
 
-  return pts;
+  -- Solo ganador/empate correcto: 3 puntos
+  if pred_winner = real_winner then
+    return 3;
+  end if;
+
+  return 0;
 end;
 $$;
 
@@ -252,7 +252,7 @@ begin
     sum(pr.points_earned),
     count(*) filter (where pr.points_earned = 5),
     count(*) filter (where pr.points_earned >= 3),
-    count(*) filter (where pr.points_earned in (2,5)),
+    count(*) filter (where pr.points_earned in (4,5)),
     count(*)
   from public.predictions pr
   where pr.poll_id = p_poll_id and pr.is_calculated = true
