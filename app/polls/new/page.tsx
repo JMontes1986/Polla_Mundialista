@@ -4,10 +4,21 @@ import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/supabase/types'
 
 export default async function NewPollPage() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-10">
+        <h1 className="text-3xl font-black text-white mb-2">Configura Supabase</h1>
+        <p className="text-red-400">Faltan NEXT_PUBLIC_SUPABASE_URL y/o NEXT_PUBLIC_SUPABASE_ANON_KEY en el despliegue.</p>
+      </div>
+    )
+  }
+
   const cookieStore = cookies()
   const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     { cookies: { get: (name: string) => cookieStore.get(name)?.value } }
   )
 
