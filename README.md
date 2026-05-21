@@ -15,8 +15,8 @@
 - **Predicciones bloqueadas** 30 minutos antes de cada partido
 - **Puntuación automática** via triggers PostgreSQL
 - **Ranking en tiempo real** con Supabase Realtime
-- **Sincronización automática** con Sportmonks (inplay) cada 5 minutos
-- **Fallback inteligente**: Sportmonks → TheSportsDB → Supabase local
+- **Sincronización automática** con API-Football para calendario y resultados
+- **Fallback inteligente**: API-Football → TheSportsDB → Supabase local
 - **Panel administrador** para corrección manual de resultados
 - **Pollas privadas** con código de invitación
 - **Exportación CSV** del ranking
@@ -39,7 +39,7 @@
 | Frontend | Next.js 14, React, TypeScript, TailwindCSS |
 | Backend | Route Handlers, Server Actions, Netlify Scheduled Functions / external cron |
 | Base de datos | Supabase (PostgreSQL + Auth + RLS + Realtime) |
-| APIs | Sportmonks (principal), TheSportsDB (fallback) |
+| APIs | API-Football (principal), TheSportsDB (fallback) |
 | Deploy | Netlify |
 
 ---
@@ -68,7 +68,7 @@ polla-mundialista/
 │       ├── cron/sync-results/route.ts
 │       └── admin/manual-result/route.ts
 ├── lib/
-│   ├── sportmonks.ts               # API principal (inplay)
+│   ├── api-football.ts             # API principal
 │   ├── thesportsdb.ts              # Fallback
 │   ├── openfootball.ts             # Carga inicial
 │   ├── scoring.ts                  # Motor de puntos
@@ -104,14 +104,16 @@ Crea el archivo `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
-SPORTMONKS_API_TOKEN=tu_token_de_sportmonks
+API_FOOTBALL_KEY=tu_api_key_de_api_football
+API_FOOTBALL_LEAGUE_ID=1
+API_FOOTBALL_SEASON=2026
 THESPORTSDB_API_KEY=3
 CRON_SECRET=genera_un_string_aleatorio_seguro
 ```
 
 **Cómo obtener las keys:**
 - **Supabase**: Dashboard → Settings → API
-- **Sportmonks**: crea tu token en https://my.sportmonks.com/
+- **API-Football**: crea tu key en https://dashboard.api-football.com/
 - **TheSportsDB**: La key `3` es pública y gratuita
 - **CRON_SECRET**: `openssl rand -base64 32`
 
@@ -202,7 +204,9 @@ En Netlify → Site configuration → Environment variables:
 NEXT_PUBLIC_SUPABASE_URL        → tu valor
 NEXT_PUBLIC_SUPABASE_ANON_KEY   → tu valor
 SUPABASE_SERVICE_ROLE_KEY       → tu valor (solo servidor)
-SPORTMONKS_API_TOKEN            → tu valor
+API_FOOTBALL_KEY                → tu valor
+API_FOOTBALL_LEAGUE_ID          → 1
+API_FOOTBALL_SEASON             → 2026
 THESPORTSDB_API_KEY             → 3
 CRON_SECRET                     → tu valor generado
 ```
@@ -252,10 +256,10 @@ WHERE username = 'tu_username';
 
 ## 🔌 APIs de Datos
 
-### football-data.org (Principal)
-- Plan gratuito: 10 req/min
-- Requiere registro para obtener API key
-- Documentación: https://www.football-data.org/documentation/quickstart
+### API-Football (Principal)
+- Plan gratuito disponible desde API-SPORTS
+- Mundial 2026: `league=1`, `season=2026`
+- Documentación: https://www.api-football.com/documentation-v3
 
 ### TheSportsDB (Fallback)
 - Key pública `3` gratuita sin límite

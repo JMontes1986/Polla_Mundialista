@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { importInplayMatches } from '@/lib/sportmonks'
+import { importWorldCupFixtures } from '@/lib/api-football'
 import type { CookieOptions } from '@supabase/ssr'
 import type { Database } from '@/lib/supabase/types'
 
@@ -72,11 +72,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   try {
-    const result = await importInplayMatches(supabaseAdmin)
+    const result = await importWorldCupFixtures(supabaseAdmin)
     const imported = result.imported + result.updated
 
     const { error: logError } = await supabaseAdmin.from('sync_logs').insert({
-      source: 'sportmonks',
+      source: 'api_football',
       matches_updated: imported,
       success: result.errors.length === 0,
       error_message: result.errors.length > 0 ? result.errors.join('; ') : null,
@@ -90,7 +90,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       cookiesToSet
     )
   } catch (err) {
-    console.error('Sportmonks import failed', err)
+    console.error('API-Football import failed', err)
     return redirectWithCookies(errorRedirectPath(params.id, err), cookiesToSet)
   }
 }

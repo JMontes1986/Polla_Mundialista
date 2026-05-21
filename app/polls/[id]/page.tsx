@@ -31,10 +31,10 @@ type Match = Pick<
 }
 
 const importMessages: Record<string, string> = {
-  ok: 'Partidos importados desde Sportmonks.',
-  partial: 'Importacion parcial desde Sportmonks. Algunos partidos no se pudieron guardar.',
-  error: 'No se pudieron importar los partidos desde Sportmonks.',
-  config: 'Faltan SPORTMONKS_API_TOKEN o las variables de servidor de Supabase.',
+  ok: 'Partidos importados desde API-Football.',
+  partial: 'Importacion parcial desde API-Football. Algunos partidos no se pudieron guardar.',
+  error: 'No se pudieron importar los partidos desde API-Football.',
+  config: 'Faltan API_FOOTBALL_KEY o las variables de servidor de Supabase.',
 }
 
 export default async function PollDetailPage({ params, searchParams }: PollDetailPageProps) {
@@ -136,7 +136,7 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <h1 className="text-3xl font-black text-white">{poll.name}</h1>
         {isOwner && (
-          <form action={`/api/polls/${pollId}/import-sportmonks`} method="post">
+          <form action={`/api/polls/${pollId}/import-api-football`} method="post">
             <button type="submit" className="btn-primary whitespace-nowrap">
               Importar partidos
             </button>
@@ -161,7 +161,7 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
             <h2 className="text-xl font-bold text-white mb-2">No hay partidos cargados</h2>
             <p className="text-gray-400 text-sm max-w-xl mx-auto">
               {isOwner
-                ? 'Usa Importar partidos para traerlos desde Sportmonks y dejarlos disponibles para los pronosticos.'
+                ? 'Usa Importar partidos para traerlos desde API-Football y dejarlos disponibles para los pronosticos.'
                 : 'El administrador de esta polla todavia no ha cargado partidos.'}
             </p>
           </div>

@@ -11,7 +11,7 @@ export type MatchPhase =
   | 'third_place'
   | 'final'
 export type UserRole = 'admin' | 'participant'
-export type SyncSource = 'sportmonks' | 'football_data' | 'thesportsdb' | 'openfootball' | 'manual' | 'cache'
+export type SyncSource = 'api_football' | 'football_data' | 'thesportsdb' | 'openfootball' | 'manual' | 'cache'
 
 export interface Database {
   public: {

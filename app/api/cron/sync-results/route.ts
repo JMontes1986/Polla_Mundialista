@@ -4,7 +4,7 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { syncInplayMatches } from '../../../../lib/sportmonks'
+import { importWorldCupFixtures } from '../../../../lib/api-football'
 import { fallbackSync } from '../../../../lib/thesportsdb'
 
 // Cliente admin con service role (solo en server)
@@ -28,16 +28,17 @@ export async function GET(request: Request) {
 
   let result = { updated: 0, errors: [] as string[], source: '' }
 
-  // 1. Intentar con Sportmonks (inplay)
+  // 1. Intentar con API-Football
   try {
-    const smResult = await syncInplayMatches(supabase)
-    if (smResult.updated > 0 || smResult.errors.length === 0) {
-      result = { ...smResult, source: 'sportmonks' }
+    const apiFootballResult = await importWorldCupFixtures(supabase)
+    const updated = apiFootballResult.imported + apiFootballResult.updated
+    if (updated > 0 || apiFootballResult.errors.length === 0) {
+      result = { updated, errors: apiFootballResult.errors, source: 'api_football' }
     } else {
-      throw new Error('sportmonks returned 0 updates, trying fallback')
+      throw new Error('API-Football returned 0 updates, trying fallback')
     }
   } catch (primaryErr) {
-    console.warn('[cron] sportmonks failed, using TheSportsDB fallback:', primaryErr)
+    console.warn('[cron] API-Football failed, using TheSportsDB fallback:', primaryErr)
 
     // 2. Fallback: TheSportsDB
     try {
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
 
   // Guardar log de sincronización
   await supabase.from('sync_logs').insert({
-    source: result.source as 'sportmonks' | 'thesportsdb' | 'manual',
+    source: result.source as 'api_football' | 'thesportsdb' | 'manual',
     matches_updated: result.updated,
     success: result.errors.length === 0,
     error_message: result.errors.length > 0 ? result.errors.join('; ') : null,
