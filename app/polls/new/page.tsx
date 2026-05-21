@@ -14,6 +14,7 @@ const pollErrorMessages: Record<string, string> = {
   name: 'Escribe un nombre para crear la polla.',
   profile: 'No se pudo preparar tu perfil para crear la polla. Revisa los logs de Netlify.',
   'profile-config': 'Falta SUPABASE_SERVICE_ROLE_KEY en Netlify para reparar perfiles de usuario.',
+  'server-config': 'Falta SUPABASE_SERVICE_ROLE_KEY en Netlify para crear pollas desde el servidor.',
   create: 'No se pudo crear la polla. Revisa los logs de Netlify para ver el detalle de Supabase.',
 }
 

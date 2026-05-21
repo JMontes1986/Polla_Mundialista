@@ -61,26 +61,25 @@ export async function POST(request: Request) {
     return redirectWithCookies('/polls/new?error=name', cookiesToSet)
   }
 
-  const { data: profile } = await supabase
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceRoleKey) {
+    console.error('Poll creation failed: service role key is not configured', {
+      userId: user.id,
+    })
+    return redirectWithCookies('/polls/new?error=server-config', cookiesToSet)
+  }
+
+  const supabaseAdmin = createAdminClient<Database>(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false },
+  })
+
+  const { data: profile } = await supabaseAdmin
     .from('profiles')
     .select('id')
     .eq('id', user.id)
     .maybeSingle()
 
   if (!profile) {
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!serviceRoleKey) {
-      console.error('Poll creation failed: user profile is missing and service role key is not configured', {
-        userId: user.id,
-      })
-      return redirectWithCookies('/polls/new?error=profile-config', cookiesToSet)
-    }
-
-    const supabaseAdmin = createAdminClient<Database>(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false },
-    })
-
     const fallbackUsername = user.email?.split('@')[0] || 'Jugador'
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -110,7 +109,7 @@ export async function POST(request: Request) {
     }
   }
 
-  const { data: poll, error } = await supabase
+  const { data: poll, error } = await supabaseAdmin
     .from('polls')
     .insert([{ name, description: description || null, is_public: isPublic, owner_id: user.id }] as any)
     .select('id')
@@ -128,7 +127,7 @@ export async function POST(request: Request) {
     return redirectWithCookies('/polls/new?error=create', cookiesToSet)
   }
 
-  const { error: memberError } = await supabase
+  const { error: memberError } = await supabaseAdmin
     .from('poll_members')
     .insert([{ poll_id: createdPoll.id, user_id: user.id }] as any)
 
