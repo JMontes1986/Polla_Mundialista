@@ -31,10 +31,10 @@ type Match = Pick<
 }
 
 const importMessages: Record<string, string> = {
-  ok: 'Partidos importados desde API-Football.',
-  partial: 'Importacion parcial desde API-Football. Algunos partidos no se pudieron guardar.',
-  error: 'No se pudieron importar los partidos desde API-Football.',
-  config: 'Faltan API_FOOTBALL_KEY o las variables de servidor de Supabase.',
+  ok: 'Calendario local del Mundial importado.',
+  partial: 'Importacion parcial del calendario local. Algunos partidos no se pudieron guardar.',
+  error: 'No se pudo importar el calendario local del Mundial.',
+  config: 'Faltan variables de servidor de Supabase.',
 }
 
 export default async function PollDetailPage({ params, searchParams }: PollDetailPageProps) {
@@ -144,9 +144,9 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
           <p className="text-gray-400 mt-1">{poll.description ?? 'Registra tus pronosticos para todos los partidos del mundial.'}</p>
         </div>
         {isOwner && (
-          <form action={`/api/polls/${pollId}/import-api-football`} method="post">
+          <form action={`/api/polls/${pollId}/import-local-calendar`} method="post">
             <button type="submit" className="btn-primary whitespace-nowrap">
-              Importar partidos
+              Montar Mundial
             </button>
           </form>
         )}
@@ -184,7 +184,7 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
             <h2 className="text-xl font-bold text-white mb-2">No hay partidos cargados</h2>
             <p className="text-gray-400 text-sm max-w-xl mx-auto">
               {isOwner
-                ? 'Usa Importar partidos para traerlos desde API-Football y dejarlos disponibles para los pronosticos.'
+                ? 'Usa Montar Mundial para cargar gratis los 104 partidos del calendario local.'
                 : 'El administrador de esta polla todavia no ha cargado partidos.'}
             </p>
           </div>

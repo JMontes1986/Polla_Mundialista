@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { importWorldCupFixtures } from '@/lib/api-football'
+import { importLocalWorldCupCalendar } from '@/lib/world-cup-2026-local'
 import type { CookieOptions } from '@supabase/ssr'
 import type { Database } from '@/lib/supabase/types'
 
@@ -72,11 +72,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   try {
-    const result = await importWorldCupFixtures(supabaseAdmin)
+    const result = await importLocalWorldCupCalendar(supabaseAdmin)
     const imported = result.imported + result.updated
 
     const { error: logError } = await supabaseAdmin.from('sync_logs').insert({
-      source: 'api_football',
+      source: 'manual',
       matches_updated: imported,
       success: result.errors.length === 0,
       error_message: result.errors.length > 0 ? result.errors.join('; ') : null,
@@ -90,7 +90,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       cookiesToSet
     )
   } catch (err) {
-    console.error('API-Football import failed', err)
+    console.error('Local calendar import failed', err)
     return redirectWithCookies(errorRedirectPath(params.id, err), cookiesToSet)
   }
 }

@@ -1,13 +1,6 @@
-// app/api/cron/sync-results/route.ts
-// Cron endpoint para Netlify (o cron externo), recomendado cada 5 minutos durante el Mundial
-// Puedes invocarlo vía: /.netlify/functions/cron-sync-results (redirigido a este route handler)
-
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { importWorldCupFixtures } from '../../../../lib/api-football'
-import { fallbackSync } from '../../../../lib/thesportsdb'
 
-// Cliente admin con service role (solo en server)
 function getAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,59 +10,27 @@ function getAdminClient() {
 }
 
 export async function GET(request: Request) {
-  // Verificar secret del cron (enviar Authorization: Bearer <CRON_SECRET>)
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const startTime = Date.now()
   const supabase = getAdminClient()
+  const message = 'Cron sin APIs externas. Usa Montar Mundial y resultados manuales.'
 
-  let result = { updated: 0, errors: [] as string[], source: '' }
-
-  // 1. Intentar con API-Football
-  try {
-    const apiFootballResult = await importWorldCupFixtures(supabase)
-    const updated = apiFootballResult.imported + apiFootballResult.updated
-    if (updated > 0 || apiFootballResult.errors.length === 0) {
-      result = { updated, errors: apiFootballResult.errors, source: 'api_football' }
-    } else {
-      throw new Error('API-Football returned 0 updates, trying fallback')
-    }
-  } catch (primaryErr) {
-    console.warn('[cron] API-Football failed, using TheSportsDB fallback:', primaryErr)
-
-    // 2. Fallback: TheSportsDB
-    try {
-      const tsdbResult = await fallbackSync(supabase)
-      result = { ...tsdbResult, source: 'thesportsdb' }
-    } catch (fallbackErr) {
-      console.error('[cron] Both APIs failed:', fallbackErr)
-      result = {
-        updated: 0,
-        errors: [String(primaryErr), String(fallbackErr)],
-        source: 'none',
-      }
-    }
-  }
-
-  const duration = Date.now() - startTime
-
-  // Guardar log de sincronización
   await supabase.from('sync_logs').insert({
-    source: result.source as 'api_football' | 'thesportsdb' | 'manual',
-    matches_updated: result.updated,
-    success: result.errors.length === 0,
-    error_message: result.errors.length > 0 ? result.errors.join('; ') : null,
-    duration_ms: duration,
+    source: 'manual',
+    matches_updated: 0,
+    success: true,
+    error_message: message,
+    duration_ms: 0,
   })
 
   return NextResponse.json({
-    success: result.errors.length === 0,
-    updated: result.updated,
-    source: result.source,
-    duration_ms: duration,
-    errors: result.errors,
+    success: true,
+    updated: 0,
+    source: 'manual',
+    duration_ms: 0,
+    message,
   })
 }
