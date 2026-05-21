@@ -1,5 +1,6 @@
 // app/dashboard/page.tsx
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -10,12 +11,17 @@ async function getDashboardData(userId: string, supabase: ReturnType<typeof crea
   const threeDaysAhead = new Date(today)
   threeDaysAhead.setDate(today.getDate() + 3)
 
-  const [profileRes, pollsRes, upcomingMatchesRes] = await Promise.all([
+  const [profileRes, pollsRes, ownedPollsRes, upcomingMatchesRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', userId).single(),
     supabase
       .from('poll_members')
       .select('points, rank, polls(id, name, invite_code)')
       .eq('user_id', userId)
+      .limit(5),
+    supabase
+      .from('polls')
+      .select('id, name, invite_code')
+      .eq('owner_id', userId)
       .limit(5),
     supabase
       .from('matches')
@@ -30,9 +36,25 @@ async function getDashboardData(userId: string, supabase: ReturnType<typeof crea
       .limit(6),
   ])
 
+  const pollsById = new Map<string, any>()
+  ;((pollsRes.data ?? []) as any[]).forEach((memberPoll) => {
+    if (memberPoll.polls?.id) {
+      pollsById.set(memberPoll.polls.id, memberPoll)
+    }
+  })
+  ;((ownedPollsRes.data ?? []) as any[]).forEach((poll) => {
+    if (!pollsById.has(poll.id)) {
+      pollsById.set(poll.id, {
+        points: 0,
+        rank: null,
+        polls: poll,
+      })
+    }
+  })
+
   return {
     profile: profileRes.data as any,
-    polls: (pollsRes.data ?? []) as any[],
+    polls: Array.from(pollsById.values()),
     upcomingMatches: (upcomingMatchesRes.data ?? []) as any[],
   }
 }
@@ -48,7 +70,17 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
 
-  const { profile, polls, upcomingMatches } = await getDashboardData(user.id, supabase)
+  const dataClient: any = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createAdminClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY,
+        { auth: { persistSession: false } }
+      )
+    : supabase
+  const { profile, polls, upcomingMatches } = await getDashboardData(
+    user.id,
+    dataClient
+  )
 
   const phaseLabels: Record<string, string> = {
     groups: 'Grupos', round_of_32: '32avos', round_of_16: '16avos',

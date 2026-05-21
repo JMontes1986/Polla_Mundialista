@@ -1,17 +1,43 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import type { Database } from '@/lib/supabase/types'
 
 async function getUserPolls(userId: string, supabase: ReturnType<typeof createServerClient<Database>>) {
-  const { data } = await supabase
-    .from('poll_members')
-    .select('points, rank, polls(id, name, invite_code, description)')
-    .eq('user_id', userId)
-    .order('joined_at', { ascending: false })
+  const [memberPollsRes, ownedPollsRes] = await Promise.all([
+    supabase
+      .from('poll_members')
+      .select('points, rank, polls(id, name, invite_code, description)')
+      .eq('user_id', userId)
+      .order('joined_at', { ascending: false }),
+    supabase
+      .from('polls')
+      .select('id, name, invite_code, description')
+      .eq('owner_id', userId)
+      .order('created_at', { ascending: false }),
+  ])
 
-  return (data ?? []) as any[]
+  const pollsById = new Map<string, any>()
+
+  ;((memberPollsRes.data ?? []) as any[]).forEach((memberPoll) => {
+    if (memberPoll.polls?.id) {
+      pollsById.set(memberPoll.polls.id, memberPoll)
+    }
+  })
+
+  ;((ownedPollsRes.data ?? []) as any[]).forEach((poll) => {
+    if (!pollsById.has(poll.id)) {
+      pollsById.set(poll.id, {
+        points: 0,
+        rank: null,
+        polls: poll,
+      })
+    }
+  })
+
+  return Array.from(pollsById.values())
 }
 
 export default async function PollsPage() {
@@ -25,7 +51,14 @@ export default async function PollsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
 
-  const polls = await getUserPolls(user.id, supabase)
+  const dataClient: any = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createAdminClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY,
+        { auth: { persistSession: false } }
+      )
+    : supabase
+  const polls = await getUserPolls(user.id, dataClient)
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">

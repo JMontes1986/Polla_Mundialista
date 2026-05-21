@@ -129,7 +129,9 @@ export async function POST(request: Request) {
 
   const { error: memberError } = await supabaseAdmin
     .from('poll_members')
-    .insert([{ poll_id: createdPoll.id, user_id: user.id }] as any)
+    .upsert([{ poll_id: createdPoll.id, user_id: user.id }] as any, {
+      onConflict: 'poll_id,user_id',
+    })
 
   if (memberError) {
     console.error('Poll creation failed: poll_members insert failed', {

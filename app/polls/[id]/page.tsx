@@ -1,9 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/supabase/types'
 
-type Poll = Pick<Database['public']['Tables']['polls']['Row'], 'id' | 'name' | 'description'>
+type Poll = Pick<
+  Database['public']['Tables']['polls']['Row'],
+  'id' | 'name' | 'description' | 'owner_id' | 'is_public'
+>
 type Prediction = Pick<
   Database['public']['Tables']['predictions']['Row'],
   'match_id' | 'home_score_pred' | 'away_score_pred'
@@ -28,15 +32,24 @@ export default async function PollDetailPage({ params }: { params: { id: string 
   if (!user) redirect('/')
 
   const pollId = params.id
+  const dataClient: any = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createAdminClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY,
+        { auth: { persistSession: false } }
+      )
+    : supabase
 
-  const [pollRes, matchesRes, predictionsRes] = await Promise.all([
-    supabase.from('polls').select('id,name,description').eq('id', pollId).single(),
-    supabase.from('matches').select('id,phase,match_date,status,lock_time,home_team:teams!matches_home_team_id_fkey(short_name,flag_url),away_team:teams!matches_away_team_id_fkey(short_name,flag_url)').order('match_date'),
-    supabase.from('predictions').select('match_id,home_score_pred,away_score_pred').eq('poll_id', pollId).eq('user_id', user.id),
+  const [pollRes, memberRes, matchesRes, predictionsRes] = await Promise.all([
+    dataClient.from('polls').select('id,name,description,owner_id,is_public').eq('id', pollId).single(),
+    dataClient.from('poll_members').select('id').eq('poll_id', pollId).eq('user_id', user.id).maybeSingle(),
+    dataClient.from('matches').select('id,phase,match_date,status,lock_time,home_team:teams!matches_home_team_id_fkey(short_name,flag_url),away_team:teams!matches_away_team_id_fkey(short_name,flag_url)').order('match_date'),
+    dataClient.from('predictions').select('match_id,home_score_pred,away_score_pred').eq('poll_id', pollId).eq('user_id', user.id),
   ])
 
   const poll = pollRes.data as Poll | null
   if (!poll) redirect('/dashboard')
+  if (!poll.is_public && poll.owner_id !== user.id && !memberRes.data) redirect('/dashboard')
 
   const predictions = (predictionsRes.data ?? []) as Prediction[]
   const matches = (matchesRes.data ?? []) as Match[]
@@ -60,7 +73,29 @@ export default async function PollDetailPage({ params }: { params: { id: string 
 
     if (Number.isNaN(matchId) || Number.isNaN(home) || Number.isNaN(away)) return
 
-    await supabase.from('predictions').upsert([
+    const dataClient: any = process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? createAdminClient<Database>(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY,
+          { auth: { persistSession: false } }
+        )
+      : supabase
+
+    const { data: poll } = await dataClient
+      .from('polls')
+      .select('owner_id,is_public')
+      .eq('id', pollId)
+      .single()
+    const { data: member } = await dataClient
+      .from('poll_members')
+      .select('id')
+      .eq('poll_id', pollId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!poll || (!poll.is_public && poll.owner_id !== user.id && !member)) redirect('/dashboard')
+
+    await dataClient.from('predictions').upsert([
       {
         poll_id: pollId,
         match_id: matchId,
