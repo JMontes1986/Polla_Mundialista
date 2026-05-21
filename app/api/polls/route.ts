@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.redirect(new URL('/polls/new?error=config', request.url))
+    return NextResponse.redirect(new URL('/polls/new?error=config', request.url), { status: 303 })
   }
 
   const cookieStore = cookies()
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL('/', request.url), { status: 303 })
   }
 
   const name = String(formData.get('name') ?? '').trim()
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   const isPublic = formData.get('isPublic') === 'on'
 
   if (!name) {
-    return NextResponse.redirect(new URL('/polls/new', request.url))
+    return NextResponse.redirect(new URL('/polls/new', request.url), { status: 303 })
   }
 
   const { data: poll, error } = await supabase
@@ -48,10 +48,10 @@ export async function POST(request: Request) {
 
   const createdPoll = poll as CreatedPoll | null
   if (error || !createdPoll) {
-    return NextResponse.redirect(new URL('/polls/new', request.url))
+    return NextResponse.redirect(new URL('/polls/new', request.url), { status: 303 })
   }
 
   await supabase.from('poll_members').insert([{ poll_id: createdPoll.id, user_id: user.id }] as any)
 
-  return NextResponse.redirect(new URL(`/polls/${createdPoll.id}`, request.url))
+  return NextResponse.redirect(new URL(`/polls/${createdPoll.id}`, request.url), { status: 303 })
 }
