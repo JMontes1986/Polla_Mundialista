@@ -207,86 +207,98 @@ function toMatchDate(date: string, time: string) {
   return `${date}T${time}:00-05:00`
 }
 
-async function upsertLocalTeam(
-  supabaseAdmin: import('@supabase/supabase-js').SupabaseClient,
-  code: string
-): Promise<number> {
-  const team = getTeam(code)
-  const { data: existing, error: findError } = await supabaseAdmin
-    .from('teams')
-    .select('id')
-    .eq('short_name', team.code)
-    .maybeSingle()
-
-  if (findError) throw findError
-  if (existing?.id) return existing.id
-
-  const { data: inserted, error: insertError } = await supabaseAdmin
-    .from('teams')
-    .insert({
-      name: team.name,
-      short_name: team.code,
-      flag_url: team.flag,
-      group_letter: null,
-      fifa_code: `LOCAL-${team.code}`,
-    })
-    .select('id')
-    .single()
-
-  if (insertError) throw insertError
-  return inserted.id
-}
-
 export async function importLocalWorldCupCalendar(
   supabaseAdmin: import('@supabase/supabase-js').SupabaseClient
 ): Promise<{ imported: number; updated: number; total: number; errors: string[] }> {
-  const errors: string[] = []
-  let imported = 0
-  let updated = 0
+  const teamCodes = Array.from(new Set(LOCAL_FIXTURES.flatMap((fixture) => [fixture.home, fixture.away])))
 
-  for (const fixture of LOCAL_FIXTURES) {
-    try {
-      const homeTeamId = await upsertLocalTeam(supabaseAdmin, fixture.home)
-      const awayTeamId = await upsertLocalTeam(supabaseAdmin, fixture.away)
-      const externalId = `local-wc-2026-${String(fixture.number).padStart(3, '0')}`
+  const { data: existingTeams, error: teamFindError } = await supabaseAdmin
+    .from('teams')
+    .select('id, short_name')
+    .in('short_name', teamCodes)
 
-      const { data: existing, error: findError } = await supabaseAdmin
-        .from('matches')
-        .select('id')
-        .eq('external_id', externalId)
-        .maybeSingle()
+  if (teamFindError) throw teamFindError
 
-      if (findError) throw findError
+  const teamIdByCode = new Map<string, number>()
+  ;(existingTeams ?? []).forEach((team: { id: number; short_name: string }) => {
+    if (!teamIdByCode.has(team.short_name)) teamIdByCode.set(team.short_name, team.id)
+  })
 
-      const payload = {
-        external_id: externalId,
-        match_number: fixture.number,
-        phase: fixture.phase,
-        home_team_id: homeTeamId,
-        away_team_id: awayTeamId,
-        home_score: null,
-        away_score: null,
-        match_date: toMatchDate(fixture.date, fixture.time),
-        venue: 'Mundial 2026',
-        city: null,
-        status: 'scheduled',
-        last_synced_at: new Date().toISOString(),
-        sync_source: 'manual',
+  const missingTeams = teamCodes
+    .filter((code) => !teamIdByCode.has(code))
+    .map((code) => {
+      const team = getTeam(code)
+      return {
+        name: team.name,
+        short_name: team.code,
+        flag_url: team.flag,
+        group_letter: null,
+        fifa_code: `LOCAL-${team.code}`,
       }
+    })
 
-      if (existing?.id) {
-        const { error } = await supabaseAdmin.from('matches').update(payload).eq('id', existing.id)
-        if (error) throw error
-        updated++
-      } else {
-        const { error } = await supabaseAdmin.from('matches').insert(payload)
-        if (error) throw error
-        imported++
-      }
-    } catch (err) {
-      errors.push(`Partido ${fixture.number}: ${err instanceof Error ? err.message : String(err)}`)
-    }
+  if (missingTeams.length > 0) {
+    const { data: insertedTeams, error: teamInsertError } = await supabaseAdmin
+      .from('teams')
+      .upsert(missingTeams, { onConflict: 'fifa_code' })
+      .select('id, short_name')
+
+    if (teamInsertError) throw teamInsertError
+    ;(insertedTeams ?? []).forEach((team: { id: number; short_name: string }) => {
+      teamIdByCode.set(team.short_name, team.id)
+    })
   }
 
-  return { imported, updated, total: LOCAL_FIXTURES.length, errors }
+  const externalIds = LOCAL_FIXTURES.map(
+    (fixture) => `local-wc-2026-${String(fixture.number).padStart(3, '0')}`
+  )
+  const { data: existingMatches, error: matchFindError } = await supabaseAdmin
+    .from('matches')
+    .select('external_id')
+    .in('external_id', externalIds)
+
+  if (matchFindError) throw matchFindError
+
+  const existingExternalIds = new Set(
+    (existingMatches ?? [])
+      .map((match: { external_id: string | null }) => match.external_id)
+      .filter(Boolean)
+  )
+  const now = new Date().toISOString()
+
+  const payloads = LOCAL_FIXTURES.map((fixture) => {
+    const homeTeamId = teamIdByCode.get(fixture.home)
+    const awayTeamId = teamIdByCode.get(fixture.away)
+
+    if (!homeTeamId || !awayTeamId) {
+      throw new Error(`No se pudo resolver equipos para partido ${fixture.number}`)
+    }
+
+    return {
+      external_id: `local-wc-2026-${String(fixture.number).padStart(3, '0')}`,
+      match_number: fixture.number,
+      phase: fixture.phase,
+      home_team_id: homeTeamId,
+      away_team_id: awayTeamId,
+      home_score: null,
+      away_score: null,
+      match_date: toMatchDate(fixture.date, fixture.time),
+      venue: 'Mundial 2026',
+      city: null,
+      status: 'scheduled',
+      last_synced_at: now,
+      sync_source: 'manual',
+    }
+  })
+
+  const { error: matchUpsertError } = await supabaseAdmin
+    .from('matches')
+    .upsert(payloads, { onConflict: 'external_id' })
+
+  if (matchUpsertError) throw matchUpsertError
+
+  const updated = existingExternalIds.size
+  const imported = LOCAL_FIXTURES.length - updated
+
+  return { imported, updated, total: LOCAL_FIXTURES.length, errors: [] }
 }

@@ -26,6 +26,10 @@ function errorRedirectPath(pollId: string, error: unknown) {
   return `/polls/${pollId}?import=error&reason=${message}`
 }
 
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  return NextResponse.redirect(new URL(`/polls/${params.id}`, request.url), { status: 303 })
+}
+
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const redirectWithCookies = (path: string, cookiesToSet: CookieToSet[] = []) => {
     const response = NextResponse.redirect(new URL(path, request.url), { status: 303 })

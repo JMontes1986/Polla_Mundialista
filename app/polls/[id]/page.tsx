@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import type { Database } from '@/lib/supabase/types'
 
 type PollDetailPageProps = {
@@ -12,6 +13,7 @@ type PollDetailPageProps = {
     updated?: string
     total?: string
     reason?: string
+    delete?: string
   }
 }
 type Poll = Pick<
@@ -77,6 +79,9 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
     ? ` Nuevos: ${searchParams.imported ?? 0} - actualizados: ${searchParams.updated ?? 0} - recibidos: ${searchParams.total}.`
     : ''
   const importReason = searchParams?.reason ? ` Detalle: ${searchParams.reason}` : ''
+  const deleteMessage = searchParams?.delete === 'confirm'
+    ? 'Para eliminar la polla debes escribir ELIMINAR exactamente.'
+    : null
   const headerStore = headers()
   const host = headerStore.get('x-forwarded-host') ?? headerStore.get('host')
   const protocol = headerStore.get('x-forwarded-proto') ?? (host?.startsWith('localhost') ? 'http' : 'https')
@@ -136,8 +141,56 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
     redirect(`/polls/${pollId}`)
   }
 
+  async function deletePoll(formData: FormData) {
+    'use server'
+    const cookieStore = cookies()
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { get: (name: string) => cookieStore.get(name)?.value } }
+    )
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect('/')
+
+    const pollId = String(formData.get('pollId'))
+    const confirm = String(formData.get('confirmDelete') ?? '').trim()
+    if (confirm !== 'ELIMINAR') redirect(`/polls/${pollId}?delete=confirm`)
+
+    const dataClient: any = process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? createAdminClient<Database>(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY,
+          { auth: { persistSession: false } }
+        )
+      : supabase
+
+    const { data: poll } = await dataClient
+      .from('polls')
+      .select('owner_id')
+      .eq('id', pollId)
+      .single()
+
+    if (!poll || poll.owner_id !== user.id) redirect('/polls')
+
+    await dataClient
+      .from('polls')
+      .delete()
+      .eq('id', pollId)
+      .eq('owner_id', user.id)
+
+    redirect('/polls?deleted=1')
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="mb-5 flex flex-wrap gap-3">
+        <Link href="/dashboard" className="btn-secondary text-sm">
+          Volver al inicio
+        </Link>
+        <Link href="/polls" className="btn-secondary text-sm">
+          Mis pollas
+        </Link>
+      </div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-black text-white">{poll.name}</h1>
@@ -152,7 +205,7 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
         )}
       </div>
       {isOwner && (
-        <div className="card p-4 mt-5 mb-6">
+        <div className="card p-4 mt-5 mb-6 space-y-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase">Invitacion</p>
@@ -165,6 +218,29 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
               Abrir enlace
             </a>
           </div>
+          <form action={deletePoll} className="border-t border-gray-800 pt-4">
+            <input type="hidden" name="pollId" value={pollId} />
+            <p className="text-xs font-semibold text-red-400 uppercase">Eliminar polla</p>
+            <p className="mt-1 text-sm text-gray-400">
+              Esto elimina la polla, sus miembros, rankings y pronosticos asociados.
+            </p>
+            {deleteMessage && (
+              <p className="mt-2 text-sm font-semibold text-amber-300">{deleteMessage}</p>
+            )}
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+              <input
+                name="confirmDelete"
+                placeholder="Escribe ELIMINAR"
+                className="min-w-0 flex-1 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              />
+              <button
+                type="submit"
+                className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-300 hover:bg-red-500/20"
+              >
+                Eliminar polla
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
