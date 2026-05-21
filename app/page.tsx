@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 type HomePageProps = {
   searchParams?: {
     error?: string
+    joinCode?: string
   }
 }
 
@@ -25,6 +26,7 @@ export default function HomePage({ searchParams }: HomePageProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const pageError = searchParams?.error ? authErrorMessages[searchParams.error] : null
+  const joinCode = String(searchParams?.joinCode ?? '').trim().toUpperCase()
   const router = useRouter()
   const supabase = createClient()
 
@@ -45,7 +47,7 @@ export default function HomePage({ searchParams }: HomePageProps) {
         })
         if (error) throw error
       }
-      router.push('/dashboard')
+      router.push(joinCode ? `/polls/join?code=${encodeURIComponent(joinCode)}` : '/dashboard')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error de autenticación')
     } finally {
@@ -198,11 +200,17 @@ export default function HomePage({ searchParams }: HomePageProps) {
                 </div>
               )}
 
-              {pageError && (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-400 text-sm">
-                  {pageError}
-                </div>
-              )}
+            {pageError && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-400 text-sm">
+                {pageError}
+              </div>
+            )}
+
+            {joinCode && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-amber-300 text-sm">
+                Inicia sesion o crea tu cuenta para unirte con el codigo {joinCode}.
+              </div>
+            )}
 
               <button
                 type="submit"

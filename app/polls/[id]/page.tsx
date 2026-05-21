@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/supabase/types'
 
@@ -16,7 +16,7 @@ type PollDetailPageProps = {
 }
 type Poll = Pick<
   Database['public']['Tables']['polls']['Row'],
-  'id' | 'name' | 'description' | 'owner_id' | 'is_public'
+  'id' | 'name' | 'description' | 'owner_id' | 'is_public' | 'invite_code'
 >
 type Prediction = Pick<
   Database['public']['Tables']['predictions']['Row'],
@@ -58,7 +58,7 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
     : supabase
 
   const [pollRes, memberRes, matchesRes, predictionsRes] = await Promise.all([
-    dataClient.from('polls').select('id,name,description,owner_id,is_public').eq('id', pollId).single(),
+    dataClient.from('polls').select('id,name,description,owner_id,is_public,invite_code').eq('id', pollId).single(),
     dataClient.from('poll_members').select('id').eq('poll_id', pollId).eq('user_id', user.id).maybeSingle(),
     dataClient.from('matches').select('id,phase,match_date,status,lock_time,home_team:teams!matches_home_team_id_fkey(short_name,flag_url),away_team:teams!matches_away_team_id_fkey(short_name,flag_url)').order('match_date'),
     dataClient.from('predictions').select('match_id,home_score_pred,away_score_pred').eq('poll_id', pollId).eq('user_id', user.id),
@@ -77,6 +77,11 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
     ? ` Nuevos: ${searchParams.imported ?? 0} - actualizados: ${searchParams.updated ?? 0} - recibidos: ${searchParams.total}.`
     : ''
   const importReason = searchParams?.reason ? ` Detalle: ${searchParams.reason}` : ''
+  const headerStore = headers()
+  const host = headerStore.get('x-forwarded-host') ?? headerStore.get('host')
+  const protocol = headerStore.get('x-forwarded-proto') ?? (host?.startsWith('localhost') ? 'http' : 'https')
+  const invitePath = `/polls/join?code=${encodeURIComponent(poll.invite_code)}`
+  const inviteUrl = host ? `${protocol}://${host}${invitePath}` : invitePath
 
   async function savePrediction(formData: FormData) {
     'use server'
@@ -134,7 +139,10 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <h1 className="text-3xl font-black text-white">{poll.name}</h1>
+        <div>
+          <h1 className="text-3xl font-black text-white">{poll.name}</h1>
+          <p className="text-gray-400 mt-1">{poll.description ?? 'Registra tus pronosticos para todos los partidos del mundial.'}</p>
+        </div>
         {isOwner && (
           <form action={`/api/polls/${pollId}/import-api-football`} method="post">
             <button type="submit" className="btn-primary whitespace-nowrap">
@@ -143,7 +151,22 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
           </form>
         )}
       </div>
-      <p className="text-gray-400 mt-1 mb-6">{poll.description ?? 'Registra tus pronósticos para todos los partidos del mundial.'}</p>
+      {isOwner && (
+        <div className="card p-4 mt-5 mb-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase">Invitacion</p>
+              <p className="text-white font-bold mt-1">
+                Codigo: <span className="text-amber-400">{poll.invite_code}</span>
+              </p>
+              <p className="text-gray-400 text-sm mt-1 break-all">{inviteUrl}</p>
+            </div>
+            <a href={invitePath} className="btn-secondary text-sm text-center whitespace-nowrap">
+              Abrir enlace
+            </a>
+          </div>
+        </div>
+      )}
 
       {importMessage && (
         <div className={`mb-5 rounded-xl border p-3 text-sm ${

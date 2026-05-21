@@ -76,6 +76,11 @@ export default async function PollsPage() {
           <p className="text-xs text-gray-500 mt-2">Inicia una liga con tus amigos.</p>
         </Link>
 
+        <Link href="/polls/join" className="card p-5 border-dashed border-blue-500/40 hover:border-blue-500/70 transition-colors">
+          <p className="text-blue-400 font-semibold">Unirme con codigo</p>
+          <p className="text-xs text-gray-500 mt-2">Ingresa el codigo que te compartieron.</p>
+        </Link>
+
         {polls.map((pm: any) => (
           <Link key={pm.polls?.id} href={`/polls/${pm.polls?.id}`} className="card p-5 hover:border-gray-600 transition-colors">
             <p className="text-white font-bold truncate">{pm.polls?.name}</p>
