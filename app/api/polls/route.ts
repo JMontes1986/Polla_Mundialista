@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     return redirectWithCookies('/polls/new?error=config')
   }
 
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const cookiesToSet: CookieToSet[] = []
   const supabase = createServerClient<Database>(
     supabaseUrl,
