@@ -2,23 +2,17 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { createClient } from '../lib/supabase/client'
-import { useRouter } from 'next/navigation'
-
-type HomePageProps = {
-  searchParams?: {
-    error?: string
-    joinCode?: string
-  }
-}
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const authErrorMessages: Record<string, string> = {
   session: 'Tu sesion no llego al servidor. Inicia sesion de nuevo e intenta crear la polla otra vez.',
   create: 'No se pudo crear la polla. Inicia sesion de nuevo y revisa que el despliegue tenga la ultima version.',
 }
 
-export default function HomePage({ searchParams }: HomePageProps) {
+function HomePageContent() {
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLogin, setIsLogin] = useState(true)
@@ -241,4 +235,8 @@ export default function HomePage({ searchParams }: HomePageProps) {
       </div>
     </div>
   )
+}
+
+export default function HomePage() {
+  return <Suspense fallback={<div className="min-h-screen bg-slate-950" />}><HomePageContent /></Suspense>
 }
