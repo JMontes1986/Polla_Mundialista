@@ -6,15 +6,15 @@ import Link from 'next/link'
 import type { Database } from '@/lib/supabase/types'
 
 type PollDetailPageProps = {
-  params: { id: string }
-  searchParams?: {
+  params: Promise<{ id: string }>
+  searchParams?: Promise<{
     import?: string
     imported?: string
     updated?: string
     total?: string
     reason?: string
     delete?: string
-  }
+  }>
 }
 
 type Poll = Pick<
@@ -43,7 +43,9 @@ const importMessages: Record<string, string> = {
 }
 
 export default async function PollDetailPage({ params, searchParams }: PollDetailPageProps) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
+  const routeParams = await params
+  const query = await searchParams
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -53,7 +55,7 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
 
-  const pollId = params.id
+  const pollId = routeParams.id
   const dataClient: any = process.env.SUPABASE_SERVICE_ROLE_KEY
     ? createAdminClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -93,15 +95,15 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
   const matches = (matchesRes.data ?? []) as Match[]
   const predMap = new Map(predictions.map((p) => [p.match_id, p]))
   const isOwner = poll.owner_id === user.id
-  const importMessage = searchParams?.import ? importMessages[searchParams.import] : null
-  const importSummary = searchParams?.total
-    ? ` Nuevos: ${searchParams.imported ?? 0} - actualizados: ${searchParams.updated ?? 0} - recibidos: ${searchParams.total}.`
+  const importMessage = query?.import ? importMessages[query.import] : null
+  const importSummary = query?.total
+    ? ` Nuevos: ${query.imported ?? 0} - actualizados: ${query.updated ?? 0} - recibidos: ${query.total}.`
     : ''
-  const importReason = searchParams?.reason ? ` Detalle: ${searchParams.reason}` : ''
-  const deleteMessage = searchParams?.delete === 'confirm'
+  const importReason = query?.reason ? ` Detalle: ${query.reason}` : ''
+  const deleteMessage = query?.delete === 'confirm'
     ? 'Para eliminar la polla debes escribir ELIMINAR exactamente.'
     : null
-  const headerStore = headers()
+  const headerStore = await headers()
   const host = headerStore.get('x-forwarded-host') ?? headerStore.get('host')
   const protocol = headerStore.get('x-forwarded-proto') ?? (host?.startsWith('localhost') ? 'http' : 'https')
   const invitePath = `/polls/join?code=${encodeURIComponent(poll.invite_code)}`
@@ -270,7 +272,7 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
 
       {importMessage && (
         <div className={`mb-5 rounded-xl border p-3 text-sm ${
-          searchParams?.import === 'ok'
+          query?.import === 'ok'
             ? 'bg-green-500/10 border-green-500/30 text-green-400'
             : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
         }`}>
