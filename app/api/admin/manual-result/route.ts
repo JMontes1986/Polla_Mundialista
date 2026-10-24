@@ -15,7 +15,7 @@ interface ManualResultPayload {
 
 export async function POST(request: Request) {
   // Autenticar usuario via Supabase (cookies de sesión)
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabaseAuth = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
