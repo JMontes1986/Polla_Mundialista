@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     return redirectWithCookies('/polls/join?error=code')
   }
 
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const cookiesToSet: CookieToSet[] = []
   const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
