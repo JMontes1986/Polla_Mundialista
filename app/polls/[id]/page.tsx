@@ -111,7 +111,7 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
 
   async function savePrediction(formData: FormData) {
     'use server'
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createServerClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -164,7 +164,7 @@ export default async function PollDetailPage({ params, searchParams }: PollDetai
 
   async function deletePoll(formData: FormData) {
     'use server'
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createServerClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
