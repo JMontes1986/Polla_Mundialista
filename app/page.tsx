@@ -19,8 +19,9 @@ function HomePageContent() {
   const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const pageError = searchParams?.error ? authErrorMessages[searchParams.error] : null
-  const joinCode = String(searchParams?.joinCode ?? '').trim().toUpperCase()
+  const errorCode = searchParams.get('error')
+  const pageError = errorCode ? authErrorMessages[errorCode] : null
+  const joinCode = String(searchParams.get('joinCode') ?? '').trim().toUpperCase()
   const router = useRouter()
   const supabase = createClient()
 
