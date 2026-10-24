@@ -9,7 +9,6 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
 
   async function handleReset(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -20,6 +19,7 @@ export default function ResetPasswordPage() {
     try {
       const redirectTo =
         typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined
+      const supabase = createClient()
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
 
       if (error) throw error

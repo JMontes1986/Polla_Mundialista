@@ -2,31 +2,26 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { createClient } from '../lib/supabase/client'
-import { useRouter } from 'next/navigation'
-
-type HomePageProps = {
-  searchParams?: {
-    error?: string
-    joinCode?: string
-  }
-}
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const authErrorMessages: Record<string, string> = {
   session: 'Tu sesion no llego al servidor. Inicia sesion de nuevo e intenta crear la polla otra vez.',
   create: 'No se pudo crear la polla. Inicia sesion de nuevo y revisa que el despliegue tenga la ultima version.',
 }
 
-export default function HomePage({ searchParams }: HomePageProps) {
+function HomePageContent() {
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLogin, setIsLogin] = useState(true)
   const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const pageError = searchParams?.error ? authErrorMessages[searchParams.error] : null
-  const joinCode = String(searchParams?.joinCode ?? '').trim().toUpperCase()
+  const errorCode = searchParams.get('error')
+  const pageError = errorCode ? authErrorMessages[errorCode] : null
+  const joinCode = String(searchParams.get('joinCode') ?? '').trim().toUpperCase()
   const router = useRouter()
   const supabase = createClient()
 
@@ -241,4 +236,8 @@ export default function HomePage({ searchParams }: HomePageProps) {
       </div>
     </div>
   )
+}
+
+export default function HomePage() {
+  return <Suspense fallback={<div className="min-h-screen bg-slate-950" />}><HomePageContent /></Suspense>
 }

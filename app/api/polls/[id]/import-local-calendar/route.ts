@@ -26,11 +26,13 @@ function errorRedirectPath(pollId: string, error: unknown) {
   return `/polls/${pollId}?import=error&reason=${message}`
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  return NextResponse.redirect(new URL(`/polls/${params.id}`, request.url), { status: 303 })
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return NextResponse.redirect(new URL(`/polls/${id}`, request.url), { status: 303 })
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const redirectWithCookies = (path: string, cookiesToSet: CookieToSet[] = []) => {
     const response = NextResponse.redirect(new URL(path, request.url), { status: 303 })
     cookiesToSet.forEach(({ name, value, options }) => {
@@ -44,10 +46,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
-    return redirectWithCookies(`/polls/${params.id}?import=config`)
+    return redirectWithCookies(`/polls/${id}?import=config`)
   }
 
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const cookiesToSet: CookieToSet[] = []
   const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -68,7 +70,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const { data: poll } = await supabaseAdmin
     .from('polls')
     .select('owner_id')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!poll || poll.owner_id !== user.id) {
@@ -90,11 +92,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     const status = result.errors.length > 0 ? 'partial' : 'ok'
     return redirectWithCookies(
-      `/polls/${params.id}?import=${status}&imported=${result.imported}&updated=${result.updated}&total=${result.total}`,
+      `/polls/${id}?import=${status}&imported=${result.imported}&updated=${result.updated}&total=${result.total}`,
       cookiesToSet
     )
   } catch (err) {
     console.error('Local calendar import failed', err)
-    return redirectWithCookies(errorRedirectPath(params.id, err), cookiesToSet)
+    return redirectWithCookies(errorRedirectPath(id, err), cookiesToSet)
   }
 }

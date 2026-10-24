@@ -5,10 +5,10 @@ import Link from 'next/link'
 import type { Database } from '@/lib/supabase/types'
 
 type JoinPollPageProps = {
-  searchParams?: {
+  searchParams?: Promise<{
     code?: string
     error?: string
-  }
+  }>
 }
 
 const joinErrorMessages: Record<string, string> = {
@@ -32,7 +32,8 @@ export default async function JoinPollPage({ searchParams }: JoinPollPageProps) 
     )
   }
 
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
+  const query = await searchParams
   const supabase = createServerClient<Database>(
     supabaseUrl,
     supabaseAnonKey,
@@ -42,7 +43,7 @@ export default async function JoinPollPage({ searchParams }: JoinPollPageProps) 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
 
-  const inviteCode = String(searchParams?.code ?? '').trim().toUpperCase()
+  const inviteCode = String(query?.code ?? '').trim().toUpperCase()
 
   return (
     <div className="max-w-xl mx-auto px-4 py-10">
@@ -56,9 +57,9 @@ export default async function JoinPollPage({ searchParams }: JoinPollPageProps) 
         </p>
       </div>
 
-      {searchParams?.error && joinErrorMessages[searchParams.error] && (
+      {query?.error && joinErrorMessages[query.error] && (
         <div className="mb-5 bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-400 text-sm">
-          {joinErrorMessages[searchParams.error]}
+          {joinErrorMessages[query.error]}
         </div>
       )}
 

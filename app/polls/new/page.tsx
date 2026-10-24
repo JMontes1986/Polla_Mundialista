@@ -4,9 +4,9 @@ import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/supabase/types'
 
 type NewPollPageProps = {
-  searchParams?: {
+  searchParams?: Promise<{
     error?: string
-  }
+  }>
 }
 
 const pollErrorMessages: Record<string, string> = {
@@ -30,7 +30,8 @@ export default async function NewPollPage({ searchParams }: NewPollPageProps) {
     )
   }
 
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
+  const query = await searchParams
   const supabase = createServerClient<Database>(
     supabaseUrl,
     supabaseAnonKey,
@@ -44,9 +45,9 @@ export default async function NewPollPage({ searchParams }: NewPollPageProps) {
     <div className="max-w-2xl mx-auto px-4 py-10">
       <h1 className="text-3xl font-black text-white mb-2">Crear nueva polla</h1>
       <p className="text-gray-400 mb-8">Crea una polla y empieza a registrar resultados partido por partido.</p>
-      {searchParams?.error && pollErrorMessages[searchParams.error] && (
+      {query?.error && pollErrorMessages[query.error] && (
         <div className="mb-5 bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-400 text-sm">
-          {pollErrorMessages[searchParams.error]}
+          {pollErrorMessages[query.error]}
         </div>
       )}
       <form action="/api/polls" method="post" className="card p-6 space-y-5">

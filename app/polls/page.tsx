@@ -41,11 +41,12 @@ async function getUserPolls(userId: string, supabase: ReturnType<typeof createSe
 }
 
 type PollsPageProps = {
-  searchParams?: { deleted?: string }
+  searchParams?: Promise<{ deleted?: string }>
 }
 
 export default async function PollsPage({ searchParams }: PollsPageProps) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
+  const query = await searchParams
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -76,7 +77,7 @@ export default async function PollsPage({ searchParams }: PollsPageProps) {
         </Link>
       </div>
 
-      {searchParams?.deleted === '1' && (
+      {query?.deleted === '1' && (
         <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-3 text-sm font-semibold text-green-400">
           Polla eliminada correctamente.
         </div>
